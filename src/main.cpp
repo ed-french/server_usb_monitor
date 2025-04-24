@@ -139,6 +139,9 @@ int read_line(char * buf, int maxlen,int timeout_ms) {
     maxlen is 1 less than the length of buf or less
     timeout_ms is when you'll get a partial string back as it is
 
+    returns -1 if nothing was found by timeout
+    returns a zero length if a CR or LF was found without any content
+
     Note control characters will be dumped
     Either a CR, LF or any both will trigger a return of what we've got
   */
@@ -158,6 +161,7 @@ int read_line(char * buf, int maxlen,int timeout_ms) {
     // Deal with timing out by returning a zero-length string
     if (millis()>endtime)
     {
+      if (chars_found==0) return -1; // We timed out with no content
       // Return what we've built so far
       return chars_found;
     }
@@ -200,8 +204,8 @@ int read_line(char * buf, int maxlen,int timeout_ms) {
       }
       if (chars_found==0)
       {
-        buf[0]=32;
-        return 1;
+        buf[0]=0;
+        return 0;
       }
       return chars_found;
 
@@ -227,35 +231,14 @@ void test_read_line() {
 }
 
 void loop() {
-  // if (ts.tirqTouched() && ts.touched()) {
-  //   TS_Point p = ts.getPoint();
-  //   printTouchToSerial(p);
-  //   printTouchToDisplay(p);
-  //   delay(100);
 
-  // }
   char line_buf[line_max_length+1];
   int len=read_line(line_buf,line_max_length,1000);
-  // Serial.flush();
-  // for (int i=0;i<next_line.length();i++) {
-  //   Serial.printf("%0x ",next_line.charAt(i));
-  // }
-  // Serial.println("");
-  if (len==0) return;
-
-  // if (next_line.charAt(next_line.length() - 1)<32)
-  // {
-  //   next_line.remove(next_line.length()-1);
-  // }
-  // if (next_line.length()==0) return;
-
-  // if (next_line.charAt(0)<32) {
-  //   next_line.remove(0);
-  // }
-  // if (next_line.length()==0) return;
 
 
-  // if (next_line.length()==0) return;
+  if (len==-1) return; // timed out without finding any content
+
+
   strncpy(screenlines[next_line_no],line_buf,line_max_length);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
